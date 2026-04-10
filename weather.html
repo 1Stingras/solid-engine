@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Weather</title>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;400;700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #060810;
+    --card: rgba(255,255,255,0.04);
+    --border: rgba(255,255,255,0.08);
+    --text: #f5f5f5;
+    --muted: rgba(245,245,245,0.4);
+    --accent: #7eb8ff;
+    --glow: rgba(126,184,255,0.15);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ANIMATED BG */
+  .bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.25;
+    animation: drift 12s ease-in-out infinite;
+  }
+
+  .orb1 { width: 500px; height: 500px; background: #1a4a8a; top: -100px; left: -100px; animation-delay: 0s; }
+  .orb2 { width: 400px; height: 400px; background: #0a2a5a; bottom: -100px; right: -100px; animation-delay: -6s; }
+  .orb3 { width: 300px; height: 300px; background: #2a6aaa; top: 40%; left: 50%; animation-delay: -3s; }
+
+  @keyframes drift {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(30px, -20px) scale(1.05); }
+    66% { transform: translate(-20px, 30px) scale(0.95); }
+  }
+
+  /* LAYOUT */
+  .page {
+    position: relative;
+    z-index: 1;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 48px 24px;
+  }
+
+  /* SEARCH */
+  .search-wrap {
+    margin-bottom: 48px;
+    animation: fadeUp 0.5s ease both;
+  }
+
+  .search-label {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  .search-row {
+    display: flex;
+    gap: 10px;
+  }
+
+  input {
+    flex: 1;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 20px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1rem;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--glow);
+  }
+
+  input::placeholder { color: var(--muted); }
+
+  .btn {
+    padding: 14px 24px;
+    background: var(--accent);
+    color: #060810;
+    border: none;
+    border-radius: 10px;
+    font-family: 'Unbounded', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    white-space: nowrap;
+  }
+
+  .btn:hover { opacity: 0.85; }
+  .btn:active { transform: scale(0.97); }
+
+  .locate-btn {
+    padding: 14px 16px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 1.1rem;
+    transition: border-color 0.15s, color 0.15s;
+  }
+
+  .locate-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* HERO */
+  #weatherOut { animation: fadeUp 0.5s ease both; }
+
+  .hero {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 24px;
+    align-items: end;
+    margin-bottom: 24px;
+    padding: 36px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    backdrop-filter: blur(10px);
+  }
+
+  .location-name {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+
+  .temp-big {
+    font-family: 'Unbounded', sans-serif;
+    font-size: clamp(4rem, 12vw, 7rem);
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: -0.04em;
+  }
+
+  .condition {
+    font-size: 1.1rem;
+    color: var(--muted);
+    margin-top: 8px;
+    font-weight: 300;
+  }
+
+  .weather-icon {
+    font-size: clamp(3rem, 8vw, 5rem);
+    line-height: 1;
+    filter: drop-shadow(0 0 20px var(--glow));
+    animation: float 4s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+
+  /* STATS GRID */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+
+  .stat {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    animation: fadeUp 0.5s ease both;
+  }
+
+  .stat-label {
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .stat-val {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .stat-unit {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.75rem;
+    color: var(--muted);
+    font-weight: 400;
+  }
+
+  /* FORECAST */
+  .forecast-title {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  .forecast {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+
+  .day {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 8px;
+    text-align: center;
+    animation: fadeUp 0.5s ease both;
+    transition: border-color 0.15s;
+  }
+
+  .day:hover { border-color: var(--accent); }
+
+  .day-name {
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .day-icon { font-size: 1.4rem; margin-bottom: 8px; }
+
+  .day-hi {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+  }
+
+  .day-lo {
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  /* HOURLY */
+  .hourly-scroll {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  .hour {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    text-align: center;
+    flex-shrink: 0;
+    min-width: 70px;
+    animation: fadeUp 0.5s ease both;
+  }
+
+  .hour-time {
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .hour-icon { font-size: 1.1rem; margin-bottom: 6px; }
+
+  .hour-temp {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+  }
+
+  /* LOADING / ERROR */
+  .status {
+    text-align: center;
+    padding: 80px 40px;
+    color: var(--muted);
+  }
+
+  .spinner {
+    width: 36px; height: 36px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin: 0 auto 16px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .error-box {
+    background: rgba(255,80,80,0.06);
+    border: 1px solid rgba(255,80,80,0.2);
+    border-radius: 12px;
+    padding: 16px 20px;
+    color: #ff8080;
+    font-size: 0.9rem;
+    margin-top: 12px;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (max-width: 600px) {
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .forecast { grid-template-columns: repeat(4, 1fr); }
+    .hero { grid-template-columns: 1fr; }
+    .weather-icon { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="bg">
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="orb orb3"></div>
+</div>
+
+<div class="page">
+  <div class="search-wrap">
+    <div class="search-label">Weather</div>
+    <div class="search-row">
+      <input id="cityInput" type="text" placeholder="Enter city name..." onkeydown="if(event.key==='Enter') search()"/>
+      <button class="locate-btn" onclick="locate()" title="Use my location">📍</button>
+      <button class="btn" onclick="search()">Search</button>
+    </div>
+    <div id="errorBox"></div>
+  </div>
+
+  <div id="weatherOut"></div>
+</div>
+
+<script>
+const WMO = {
+  0: ['Clear sky', '☀️'],
+  1: ['Mostly clear', '🌤️'], 2: ['Partly cloudy', '⛅'], 3: ['Overcast', '☁️'],
+  45: ['Foggy', '🌫️'], 48: ['Icy fog', '🌫️'],
+  51: ['Light drizzle', '🌦️'], 53: ['Drizzle', '🌦️'], 55: ['Heavy drizzle', '🌧️'],
+  61: ['Light rain', '🌧️'], 63: ['Rain', '🌧️'], 65: ['Heavy rain', '🌧️'],
+  71: ['Light snow', '🌨️'], 73: ['Snow', '❄️'], 75: ['Heavy snow', '❄️'],
+  77: ['Snow grains', '🌨️'],
+  80: ['Light showers', '🌦️'], 81: ['Showers', '🌧️'], 82: ['Heavy showers', '⛈️'],
+  85: ['Snow showers', '🌨️'], 86: ['Heavy snow showers', '❄️'],
+  95: ['Thunderstorm', '⛈️'], 96: ['Thunderstorm w/ hail', '⛈️'], 99: ['Thunderstorm w/ hail', '⛈️'],
+}
+
+function getWMO(code) { return WMO[code] || ['Unknown', '🌡️'] }
+
+function dayName(dateStr, i) {
+  if (i === 0) return 'Today'
+  if (i === 1) return 'Tmrw'
+  return new Date(dateStr).toLocaleDateString('en-US', { weekday: 'short' })
+}
+
+function hourLabel(iso) {
+  const d = new Date(iso)
+  const h = d.getHours()
+  if (h === 0) return '12 AM'
+  if (h === 12) return '12 PM'
+  return h < 12 ? `${h} AM` : `${h-12} PM`
+}
+
+async function geocode(city) {
+  const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1`)
+  const data = await res.json()
+  if (!data.results?.length) throw new Error(`City "${city}" not found.`)
+  return data.results[0]
+}
+
+async function fetchWeather(lat, lon) {
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+    `&current=temperature_2m,apparent_temperature,weathercode,windspeed_10m,relativehumidity_2m,precipitation` +
+    `&daily=weathercode,temperature_2m_max,temperature_2m_min` +
+    `&hourly=temperature_2m,weathercode` +
+    `&temperature_unit=fahrenheit&windspeed_unit=mph&precipitation_unit=inch&timezone=auto&forecast_days=7`
+  const res = await fetch(url)
+  return res.json()
+}
+
+function render(locationName, w) {
+  const cur = w.current
+  const daily = w.daily
+  const hourly = w.hourly
+  const [cond, icon] = getWMO(cur.weathercode)
+
+  // next 24 hours starting from now
+  const nowHour = new Date().getHours()
+  const hourSlice = hourly.time.slice(nowHour, nowHour + 24)
+  const hourTemps = hourly.temperature_2m.slice(nowHour, nowHour + 24)
+  const hourCodes = hourly.weathercode.slice(nowHour, nowHour + 24)
+
+  document.getElementById('weatherOut').innerHTML = `
+    <div class="hero">
+      <div>
+        <div class="location-name">📍 ${locationName}</div>
+        <div class="temp-big">${Math.round(cur.temperature_2m)}°</div>
+        <div class="condition">Feels like ${Math.round(cur.apparent_temperature)}° · ${cond}</div>
+      </div>
+      <div class="weather-icon">${icon}</div>
+    </div>
+
+    <div class="stats">
+      <div class="stat" style="animation-delay:.05s">
+        <div class="stat-label">Humidity</div>
+        <div class="stat-val">${cur.relativehumidity_2m}<span class="stat-unit">%</span></div>
+      </div>
+      <div class="stat" style="animation-delay:.1s">
+        <div class="stat-label">Wind</div>
+        <div class="stat-val">${Math.round(cur.windspeed_10m)}<span class="stat-unit"> mph</span></div>
+      </div>
+      <div class="stat" style="animation-delay:.15s">
+        <div class="stat-label">High</div>
+        <div class="stat-val">${Math.round(daily.temperature_2m_max[0])}<span class="stat-unit">°F</span></div>
+      </div>
+      <div class="stat" style="animation-delay:.2s">
+        <div class="stat-label">Low</div>
+        <div class="stat-val">${Math.round(daily.temperature_2m_min[0])}<span class="stat-unit">°F</span></div>
+      </div>
+    </div>
+
+    <div class="forecast-title">7-Day Forecast</div>
+    <div class="forecast">
+      ${daily.time.map((d, i) => {
+        const [, ic] = getWMO(daily.weathercode[i])
+        return `<div class="day" style="animation-delay:${0.05*i}s">
+          <div class="day-name">${dayName(d, i)}</div>
+          <div class="day-icon">${ic}</div>
+          <div class="day-hi">${Math.round(daily.temperature_2m_max[i])}°</div>
+          <div class="day-lo">${Math.round(daily.temperature_2m_min[i])}°</div>
+        </div>`
+      }).join('')}
+    </div>
+
+    <div class="forecast-title" style="margin-top:24px">Hourly</div>
+    <div class="hourly-scroll">
+      ${hourSlice.map((t, i) => {
+        const [, ic] = getWMO(hourCodes[i])
+        return `<div class="hour" style="animation-delay:${0.03*i}s">
+          <div class="hour-time">${hourLabel(t)}</div>
+          <div class="hour-icon">${ic}</div>
+          <div class="hour-temp">${Math.round(hourTemps[i])}°</div>
+        </div>`
+      }).join('')}
+    </div>
+  `
+}
+
+function showError(msg) {
+  document.getElementById('errorBox').innerHTML = `<div class="error-box">${msg}</div>`
+}
+
+function clearError() {
+  document.getElementById('errorBox').innerHTML = ''
+}
+
+function showLoading() {
+  document.getElementById('weatherOut').innerHTML = `<div class="status"><div class="spinner"></div>Fetching weather...</div>`
+}
+
+async function search() {
+  const city = document.getElementById('cityInput').value.trim()
+  if (!city) return
+  clearError()
+  showLoading()
+  try {
+    const loc = await geocode(city)
+    const w = await fetchWeather(loc.latitude, loc.longitude)
+    render(`${loc.name}, ${loc.country}`, w)
+  } catch(e) {
+    showError(e.message)
+    document.getElementById('weatherOut').innerHTML = ''
+  }
+}
+
+async function locate() {
+  if (!navigator.geolocation) return showError('Geolocation not supported.')
+  clearError()
+  showLoading()
+  navigator.geolocation.getCurrentPosition(async pos => {
+    try {
+      const { latitude: lat, longitude: lon } = pos.coords
+      // Reverse geocode
+      const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=&count=1`)
+      const w = await fetchWeather(lat, lon)
+      render('Your Location', w)
+    } catch(e) {
+      showError(e.message)
+    }
+  }, () => showError('Location access denied.'))
+}
+
+// Default load
+window.addEventListener('DOMContentLoaded', async () => {
+  showLoading()
+  try {
+    const loc = await geocode('New York')
+    const w = await fetchWeather(loc.latitude, loc.longitude)
+    render('New York, US', w)
+  } catch(e) {
+    document.getElementById('weatherOut').innerHTML = ''
+  }
+})
+</script>
+</body>
+</html>
